@@ -33,3 +33,21 @@ body {
 .scrollbar-none::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
+
+/* Add bottom margin to textarea content to prevent text going behind controls */
+.textarea-with-controls {
+  box-sizing: border-box;
+  padding-bottom: 80px !important;
+}
+
+.textarea-fade-overlay {
+  position: absolute;
+  bottom: 7.2px;
+  left: 6px;
+  right: 6px;
+  height: 70px;
+  background: linear-gradient(to bottom, transparent 0%, transparent 30%, #2a2a2a 100%);
+  pointer-events: none;
+  z-index: 15;
+  border-radius: 0 0 0.375rem 0.375rem;
+}

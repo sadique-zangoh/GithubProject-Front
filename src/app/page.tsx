@@ -177,16 +177,19 @@ export default function Home() {
         </div>
 
         {/* Central Text Area */}
-        <div className="w-full max-w-4xl relative overflow-visible">
+        <div className="w-full max-w-4xl relative">
           <textarea
             value={fileContent || textAreaContent}
             onChange={(e) => setTextAreaContent(e.target.value)}
-            className="w-full h-80 bg-[#2a2a2a] text-white text-base p-6 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 resize-none"
+            className="w-full h-80 bg-[#2a2a2a] text-white text-base p-6 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 resize-none relative z-10 textarea-with-controls"
             placeholder="Enter your content here or load file content..."
           />
 
+          {/* Fade overlay to hide text behind controls */}
+          <div className="textarea-fade-overlay"></div>
+
           {/* Bottom Controls - Inside the textarea area */}
-          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between overflow-visible">
+          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between overflow-visible z-20">
             <div className="flex items-center space-x-4">
               {/* Repository Dropdown */}
               <div className="relative dropdown-container">
