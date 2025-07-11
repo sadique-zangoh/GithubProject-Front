@@ -29,12 +29,22 @@ export default function Home() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<number|null>(null);
   const conversationIdRef = useRef(1);
+  const [isAddingRepo, setIsAddingRepo] = useState(false);
+  const [newRepoName, setNewRepoName] = useState('');
+  const [isAddingBranch, setIsAddingBranch] = useState(false);
+  const [newBranchName, setNewBranchName] = useState('');
 
   useEffect(() => {
     // Remove the token from localStorage on every page load/refresh
     localStorage.removeItem('githubToken');
     // Do not auto-load token from localStorage anymore
   }, []);
+
+  // Reset selectedRepo and selectedBranch when githubToken changes
+  useEffect(() => {
+    setSelectedRepo('');
+    setSelectedBranch('');
+  }, [githubToken]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -166,23 +176,65 @@ export default function Home() {
 
   // Add new repo/branch handlers
   const handleAddRepo = () => {
-    const newRepo = prompt('Enter new repository name:');
-    if (newRepo) {
-      setRepositories(prev => [...prev, { id: Date.now(), full_name: newRepo }]);
-    }
+    setIsAddingRepo(true);
+    setTimeout(() => {
+      const input = document.getElementById('add-repo-input');
+      if (input) (input as HTMLInputElement).focus();
+    }, 0);
   };
   const handleAddBranch = () => {
     if (!selectedRepo) return;
-    const newBranch = prompt('Enter new branch name:');
-    if (newBranch) {
-      setBranches(prev => [...prev, { name: newBranch }]);
+    setIsAddingBranch(true);
+    setTimeout(() => {
+      const input = document.getElementById('add-branch-input');
+      if (input) (input as HTMLInputElement).focus();
+    }, 0);
+  };
+  const handleRepoInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewRepoName(e.target.value);
+  };
+  const handleRepoInputKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newRepoName.trim()) {
+      setRepositories(prev => [...prev, { id: Date.now(), full_name: newRepoName.trim() }]);
+      setNewRepoName('');
+      setIsAddingRepo(false);
+    } else if (e.key === 'Escape') {
+      setNewRepoName('');
+      setIsAddingRepo(false);
     }
+  };
+  const handleRepoInputBlur = () => {
+    if (newRepoName.trim()) {
+      setRepositories(prev => [...prev, { id: Date.now(), full_name: newRepoName.trim() }]);
+    }
+    setNewRepoName('');
+    setIsAddingRepo(false);
+  };
+  const handleBranchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewBranchName(e.target.value);
+  };
+  const handleBranchInputKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newBranchName.trim()) {
+      setBranches(prev => [...prev, { name: newBranchName.trim() }]);
+      setNewBranchName('');
+      setIsAddingBranch(false);
+    } else if (e.key === 'Escape') {
+      setNewBranchName('');
+      setIsAddingBranch(false);
+    }
+  };
+  const handleBranchInputBlur = () => {
+    if (newBranchName.trim()) {
+      setBranches(prev => [...prev, { name: newBranchName.trim() }]);
+    }
+    setNewBranchName('');
+    setIsAddingBranch(false);
   };
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] text-white">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-b border-gray-800 gap-2 sm:gap-0">
+      <div className="flex flex-row items-center justify-between p-4 border-b border-gray-800 gap-2">
         <div className="flex items-center space-x-3">
           <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
             <span className="text-black text-sm font-bold">Z</span>
@@ -258,7 +310,7 @@ export default function Home() {
                 value={fileContent || textAreaContent}
                 onChange={(e) => setTextAreaContent(e.target.value)}
                 className="w-full h-120 sm:h-60 md:h-80 bg-[#2a2a2a] text-white text-base sm:text-base text-lg p-5 sm:p-6 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 resize-none relative z-10 textarea-with-controls"
-                placeholder="Enter your content here or load file content..."
+                placeholder="Enter your content here..."
               />
               {/* Fade overlay to hide text behind controls */}
               <div className="textarea-fade-overlay"></div>
@@ -300,13 +352,28 @@ export default function Home() {
                           </div>
                         ))}
                         {/* Plus sign for add new repo */}
-                        <div
-                          className="px-4 py-3 flex items-center space-x-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-600 last:border-b-0 dropdown-item"
-                          onClick={handleAddRepo}
-                        >
-                          <span className="text-xl font-bold">+</span>
-                          <span>Add new repo</span>
-                        </div>
+                        {isAddingRepo ? (
+                          <div className="px-4 py-3 flex items-center space-x-2 border-b border-gray-600 last:border-b-0 dropdown-item">
+                            <span className="text-xl font-bold">+</span>
+                            <input
+                              id="add-repo-input"
+                              className="bg-[#232323] text-white text-sm px-2 py-1 rounded border border-gray-700 focus:outline-none w-24"
+                              placeholder="Enter repo name"
+                              value={newRepoName}
+                              onChange={handleRepoInput}
+                              onKeyDown={handleRepoInputKey}
+                              onBlur={handleRepoInputBlur}
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className="px-4 py-3 flex items-center space-x-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-600 last:border-b-0 dropdown-item"
+                            onClick={handleAddRepo}
+                          >
+                            <span className="text-xl font-bold">+</span>
+                            <span className="text-sm">Add new repo</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -344,13 +411,28 @@ export default function Home() {
                         ))}
                         {/* Plus sign for add new branch, only if repo is selected */}
                         {selectedRepo && (
-                          <div
-                            className="px-4 py-3 flex items-center space-x-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-600 last:border-b-0 dropdown-item"
-                            onClick={handleAddBranch}
-                          >
-                            <span className="text-xl font-bold">+</span>
-                            <span>Add new branch</span>
-                          </div>
+                          isAddingBranch ? (
+                            <div className="px-4 py-3 flex items-center space-x-2 border-b border-gray-600 last:border-b-0 dropdown-item">
+                              <span className="text-xl font-bold">+</span>
+                              <input
+                                id="add-branch-input"
+                                className="bg-[#232323] text-white text-sm px-2 py-1 rounded border border-gray-700 focus:outline-none w-24"
+                                placeholder="Enter branch name"
+                                value={newBranchName}
+                                onChange={handleBranchInput}
+                                onKeyDown={handleBranchInputKey}
+                                onBlur={handleBranchInputBlur}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className="px-4 py-3 flex items-center space-x-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-600 last:border-b-0 dropdown-item"
+                              onClick={handleAddBranch}
+                            >
+                              <span className="text-xl font-bold">+</span>
+                              <span className="text-sm">Add branch</span>
+                            </div>
+                          )
                         )}
                       </div>
                     )}
