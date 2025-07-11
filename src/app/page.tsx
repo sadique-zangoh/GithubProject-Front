@@ -1,10 +1,36 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { FaTrash } from 'react-icons/fa';
+import { FaFolder } from 'react-icons/fa';
+import { FaCodeBranch } from 'react-icons/fa';
 
 function truncateText(text: string, maxLength: number) {
   return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
 }
+
+type Message = { text: string, timestamp: string };
+type Conversation = {
+  id: number,
+  repo: string,
+  branch: string,
+  messages: Message[],
+};
+
+// Helper to delete a message from a conversation
+const deleteMessageFromConversation = (
+  conversations: Conversation[],
+  conversationId: number,
+  messageIdx: number
+) => {
+  return conversations.map(conv => {
+    if (conv.id !== conversationId) return conv;
+    return {
+      ...conv,
+      messages: conv.messages.filter((_: unknown, idx: number) => idx !== messageIdx),
+    };
+  }).filter(conv => conv.messages.length > 0); // Remove conversation if no messages left
+};
 
 export default function Home() {
   const [githubToken, setGithubToken] = useState('');
@@ -19,13 +45,6 @@ export default function Home() {
   const [showRepoDropdown, setShowRepoDropdown] = useState(false);
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   // Update conversation data model
-  type Message = { text: string, timestamp: string };
-  type Conversation = {
-    id: number,
-    repo: string,
-    branch: string,
-    messages: Message[],
-  };
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<number|null>(null);
   const conversationIdRef = useRef(1);
@@ -97,12 +116,6 @@ export default function Home() {
       console.error('Error fetching branches:', error);
     }
   }, []);
-
-  useEffect(() => {
-    if (githubToken) {
-      fetchRepositories(githubToken);
-    }
-  }, [githubToken, fetchRepositories]);
 
   useEffect(() => {
     if (selectedRepo && githubToken) {
@@ -252,32 +265,51 @@ export default function Home() {
         {/* Conversation Detail View */}
         {selectedConversation !== null ? (
           <div className="w-full max-w-4xl bg-[#232323] rounded-lg p-4 sm:p-8 mt-8 shadow-lg">
-            <button
-              className="mb-6 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
-              onClick={() => setSelectedConversation(null)}
-            >
-              ← Back
-            </button>
-            <div className="mb-4 text-xs text-gray-400">
-              {(() => {
-                const conv = conversations.find(c => c.id === selectedConversation);
-                if (!conv) return null;
-                return (
-                  <>
-                    <span className="font-semibold">Repo:</span> {conv.repo || '-'} &nbsp; | &nbsp;
-                    <span className="font-semibold">Branch:</span> {conv.branch || '-'}
-                  </>
-                );
-              })()}
+            <div className="flex items-center mb-6">
+              <button
+                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
+                onClick={() => setSelectedConversation(null)}
+              >
+                ← Back
+              </button>
+            </div>
+            <div className="mb-4 text-xs text-gray-400 flex items-center justify-between">
+              <span>
+                {(() => {
+                  const conv = conversations.find(c => c.id === selectedConversation);
+                  if (!conv) return null;
+                  return (
+                    <>
+                      <span className="font-semibold">Repo:</span> {conv.repo || '-'} &nbsp; | &nbsp;
+                      <span className="font-semibold">Branch:</span> {conv.branch || '-'}
+                    </>
+                  );
+                })()}
+              </span>
             </div>
             <div className="flex flex-col gap-4 sm:gap-6">
               {(() => {
                 const conv = conversations.find(c => c.id === selectedConversation);
                 if (!conv) return null;
                 return conv.messages.map((msg, idx) => (
-                  <div key={idx} className="bg-[#181818] rounded p-4 sm:p-6 border border-gray-800">
-                    <div className="text-xs text-gray-500 mb-2">{new Date(msg.timestamp).toLocaleString()}</div>
-                    <div className="text-lg text-white whitespace-pre-wrap">{msg.text}</div>
+                  <div key={idx} className="bg-[#181818] rounded p-4 sm:p-6 border border-gray-800 flex flex-col">
+                    <div className="mb-2">
+                      <span className="text-xs text-gray-500">{new Date(msg.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="text-lg text-white whitespace-pre-wrap flex-1">{msg.text}</div>
+                      <button
+                        className="ml-2 flex items-center justify-center w-6 h-6 bg-transparent hover:bg-white/20 rounded-full text-white"
+                        title="Delete message"
+                        onClick={() => {
+                          if (window.confirm('Delete this message?')) {
+                            setConversations(prev => deleteMessageFromConversation(prev, conv.id, idx));
+                          }
+                        }}
+                      >
+                        <FaTrash size={14} />
+                      </button>
+                    </div>
                   </div>
                 ));
               })()}
@@ -327,9 +359,7 @@ export default function Home() {
                         setShowBranchDropdown(false);
                       }}
                     >
-                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0h8v12H6V4z" clipRule="evenodd"></path>
-                      </svg>
+                      <FaFolder className="text-gray-400" size={16} />
                       <span className="text-white truncate flex-1">{selectedRepo || 'Repository'}</span>
                       <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"></path>
@@ -387,9 +417,7 @@ export default function Home() {
                         setShowRepoDropdown(false);
                       }}
                     >
-                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414v3.758a1 1 0 01-.293.707l-4 4C.817 14.769 2.156 18 4.828 18h10.343c2.673 0 4.012-3.231 2.122-5.121l-4-4A1 1 0 0113 8.172V4.414l.707-.707A1 1 0 0013 2H7zm2 6.172V4h2v4.172a3 3 0 00.879 2.12l1.027 1.028a1 1 0 00.707.293H15a1 1 0 010 2h-1.586a3 3 0 00-2.122.879l-1.027 1.027a1 1 0 01-.707.293H7a1 1 0 010-2h1.586a3 3 0 002.122-.879l1.027-1.027A3 3 0 009 8.172z" clipRule="evenodd"></path>
-                      </svg>
+                      <FaCodeBranch className="text-gray-400" size={16} />
                       <span className="text-white flex-1">{selectedBranch ? (selectedBranch.length > 10 ? selectedBranch.substring(0, 10) + '...' : selectedBranch) : 'Branch'}</span>
                       <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"></path>
